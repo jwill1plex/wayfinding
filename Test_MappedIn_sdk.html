@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mappedin Office Demo with CDN</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+    }
+    #mappedin-map {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="mappedin-map"></div>
+
+  <script type="module">
+    import {
+      getMapData,
+      show3dMap
+    } from "https://cdn.jsdelivr.net/npm/@mappedin/mappedin-js@6.0/lib/esm/index.min.js";
+
+    const options = {
+      key: "mik_yeBk0Vf0nNJtpesfu560e07e5",
+      secret: "mis_2g9ST8ZcSFb5R9fPnsvYhrX3RyRwPtDGbMGweCYKEq385431022",
+      mapId: "64ef49e662fd90fe020bee61" // Office Demo
+    };
+
+    async function init() {
+      try {
+        const mapData = await getMapData(options);
+        await show3dMap(
+          document.getElementById("mappedin-map"),
+          mapData
+        );
+        console.log("Office Demo loaded successfully!");
+      } catch (err) {
+        console.error("Map load error:", err);
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
