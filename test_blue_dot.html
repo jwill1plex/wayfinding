@@ -98,15 +98,14 @@ import {
   Space,
   TGetMapDataOptions,
 } from "@mappedin/mappedin-js";
-import { BlueDot } from "@mappedin/blue-dot";
+import { BlueDot, BlueDotPositionUpdate } from "@mappedin/blue-dot";
 import { generatePositionUpdates } from "./generator";
 import { populateSpaceSelector } from "./spaceSelector";
 import { populateFloorSelector } from "./floorSelector";
 import { setSelectedFloor } from "./floorSelector";
 import { saveTemplateAsFile } from "./fileDownloader";
 import { DynamicPositionUpdater } from "./positionUpdater";
-
-   
+      
  const options = {
         key: "mik_yeBk0Vf0nNJtpesfu560e07e5",
         secret: "mis_2g9ST8ZcSFb5R9fPnsvYhrX3RyRwPtDGbMGweCYKEq385431022",
