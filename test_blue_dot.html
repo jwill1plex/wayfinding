@@ -89,11 +89,22 @@
 
     <script type="module">
       
-
-   import { getMapData, show3dMap } from "https://cdn.jsdelivr.net/npm/@mappedin/mappedin-js@6.0/lib/esm/index.min.js";
-    import { BlueDot } from "https://esm.run/@mappedin/blue-dot@6.0.1-beta.54";
-
-
+import {
+  getMapData,
+  MapData,
+  MapView,
+  Marker,
+  show3dMap,
+  Space,
+  TGetMapDataOptions,
+} from "@mappedin/mappedin-js";
+import { BlueDot, BlueDotPositionUpdate } from "@mappedin/blue-dot";
+import { generatePositionUpdates } from "./generator";
+import { populateSpaceSelector } from "./spaceSelector";
+import { populateFloorSelector } from "./floorSelector";
+import { setSelectedFloor } from "./floorSelector";
+import { saveTemplateAsFile } from "./fileDownloader";
+import { DynamicPositionUpdater } from "./positionUpdater";
 
       const options = {
         key: "mik_yeBk0Vf0nNJtpesfu560e07e5",
