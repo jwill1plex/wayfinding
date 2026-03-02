@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mappedin Office Demo + Blue Dot</title>
+
+    <style>
+      * { margin: 0; padding: 0; }
+      html, body { width: 100%; height: 100%; }
+
+      #mappedin-map {
+        width: 100%;
+        height: 100%;
+        position: relative;
+      }
+
+      /* Simple floating control panel */
+      #controls {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        z-index: 10;
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 12px;
+        padding: 12px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        width: 320px;
+      }
+      #controls h3 { font-size: 14px; margin-bottom: 8px; }
+      #controls .row { display: flex; gap: 8px; margin: 8px 0; }
+      #controls button {
+        flex: 1;
+        padding: 10px;
+        border: 0;
+        border-radius: 10px;
+        cursor: pointer;
+      }
+      #enableDevice { background: #2563eb; color: white; }
+      #disable { background: #ef4444; color: white; }
+      #simulateClick { background: #10b981; color: white; }
+      #status {
+        font-size: 12px;
+        color: #111827;
+        margin-top: 8px;
+        line-height: 1.35;
+        white-space: pre-wrap;
+      }
+      #hint {
+        font-size: 12px;
+        color: #374151;
+        margin-top: 6px;
+      }
+    </style>
+
+    <!-- Import map so we can do: import { getMapData } from "@mappedin/mappedin-js" -->
+    <script type="importmap">
+      {
+        "imports": {
+          "@mappedin/mappedin-js": "https://esm.sh/@mappedin/mappedin-js@6.0.0",
+          "@mappedin/blue-dot": "https://esm.sh/@mappedin/blue-dot@6.0.0"
+        }
+      }
+    </script>
+  </head>
+
+  <body>
+    <div id="mappedin-map">
+      <div id="controls">
+        <h3>Blue Dot Controls</h3>
+
+        <div class="row">
+          <button id="enableDevice">Enable (Device GPS)</button>
+          <button id="disable">Disable</button>
+        </div>
+
+        <div class="row">
+          <button id="simulateClick">Simulate by Clicking Map</button>
+        </div>
+
+        <div id="hint">
+          Tip: “Simulate” lets you click anywhere on the map to move Blue Dot (handy for testing).
+        </div>
+
+        <div id="status"></div>
+      </div>
+    </div>
+
+    <script type="module">
+      import { getMapData, show3dMap } from "@mappedin/mappedin-js";
+      import { BlueDot } from "@mappedin/blue-dot";
+
+      const options = {
+        key: "mik_yeBk0Vf0nNJtpesfu560e07e5",
+        secret: "mis_2g9ST8ZcSFb5R9fPnsvYhrX3RyRwPtDGbMGweCYKEq385431022",
+        mapId: "64ef49e662fd90fe020bee61" // Office Demo
+      };
+
+      const statusEl = document.getElementById("status");
+      const enableDeviceBtn = document.getElementById("enableDevice");
+      const disableBtn = document.getElementById("disable");
+      const simulateClickBtn = document.getElementById("simulateClick");
+
+      let mapView;
+      let blueDot;
+      let clickSimulationEnabled = false;
+
+      const setStatus = (obj) => {
+        statusEl.textContent =
+          typeof obj === "string" ? obj : JSON.stringify(obj, null, 2);
+      };
+
+      async function init() {
+        try {
+          const mapData = await getMapData(options);
+          mapView = await show3dMap(document.getElementById("mappedin-map"), mapData);
+
+          // Create & enable Blue Dot (initially NOT watching device position)
+          blueDot = new BlueDot(mapView);
+
+          // Enable without auto-watching device GPS. We'll update manually on click.
+          // enable() supports customization options in docs. [1](https://developer.mappedin.com/web-sdk/blue-dot)
+          blueDot.enable({
+            watchDevicePosition: false,
+            color: "dodgerblue",
+            accuracyRing: { color: "dodgerblue", opacity: 0.15 }
+          });
+
+          setStatus("Map loaded.\nBlue Dot enabled in manual mode (watchDevicePosition: false).");
+
+          // Map click handler can read the click coordinate (Mappedin docs show click events expose a coordinate). [3](https://docs.mappedin.com/web/v6/latest/index.html)
+          mapView.on("click", (event) => {
+            if (!clickSimulationEnabled) return;
+            if (!blueDot) return;
+
+            const { coordinate } = event;
+            if (!coordinate) return;
+
+            // Push a manual position update into BlueDot
+            const update = {
+              latitude: coordinate.latitude,
+              longitude: coordinate.longitude,
+              accuracy: 5,
+              heading: 0,
+              floorOrFloorId: mapView.currentFloor?.id
+            };
+
+            blueDot.update(update);
+            setStatus({ mode: "click-sim", update });
+
+            // Optional: follow the dot with the camera
+            mapView.Camera.animateTo(
+              { center: coordinate, zoomLevel: 20 },
+              { duration: 700, easing: "ease-in-out" }
+            );
+          });
+
+        } catch (err) {
+          console.error(err);
+          setStatus("Map load error:\n" + (err?.message || String(err)));
+        }
+      }
+
+      // Buttons
+      enableDeviceBtn.onclick = async () => {
+        try {
+          if (!blueDot) return;
+          // Enabling with device watching will prompt for location permission. [1](https://developer.mappedin.com/web-sdk/blue-dot)
+          blueDot.enable({
+            watchDevicePosition: true,
+            color: "tomato",
+            accuracyRing: { color: "tomato", opacity: 0.12 },
+            heading: { color: "tomato", opacity: 1 }
+          });
+          clickSimulationEnabled = false;
+          setStatus("Blue Dot enabled with device GPS (watchDevicePosition: true).");
+        } catch (e) {
+          console.error(e);
+          setStatus("Failed to enable device GPS:\n" + (e?.message || String(e)));
+        }
+      };
+
+      disableBtn.onclick = () => {
+        if (!blueDot) return;
+        blueDot.disable();
+        clickSimulationEnabled = false;
+        setStatus("Blue Dot disabled.");
+      };
+
+      simulateClickBtn.onclick = () => {
+        if (!blueDot) return;
+
+        // Ensure manual mode
+        blueDot.enable({ watchDevicePosition: false, color: "dodgerblue" });
+        clickSimulationEnabled = true;
+        setStatus("Click simulation ON.\nNow click on the map to move the Blue Dot.");
+      };
+
+      init();
+    </script>
+  </body>
+</html>
